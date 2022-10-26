@@ -11,7 +11,7 @@ import re
 
 def check_password():
     """Returns `True` if the user had the correct password."""
-    return True
+    # return True
     def password_entered():
         """Checks whether a password entered by the user is correct."""
         if st.session_state["password"] == st.secrets["password"]:
@@ -37,24 +37,6 @@ def check_password():
         # Password correct.
         return True
 
-# def add_classical_genre(df_movies):
-#     df_movies['Year'] = df_movies['title'].apply(lambda x: get_year(x))
-#     for index, row in df_movies.iterrows():
-#         year = row['Year']
-#         genres = row['genres']
-
-#         if int(year) < 2000:
-#             genres = genres + '|classic'
-
-#         df_movies.at[index, 'genres'] =  genres
-    
-#     df_movies = df_movies.drop('Year', axis=1)
-#     return df_movies
-
-def file_selector(folder_path='.'):
-    filenames = os.listdir(folder_path)
-    selected_filename = st.sidebar.selectbox('Select a file', filenames)
-    return os.path.join(folder_path, selected_filename)
 
 if __name__=='__main__':
 
