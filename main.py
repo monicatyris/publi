@@ -58,7 +58,7 @@ if __name__=='__main__':
         st.sidebar.checkbox("Using a pre-computed video", key="disabled")
         option = st.sidebar.selectbox(
         'Please select one of the pre-calculated .CSV',
-        pd.read_csv('precalculated_videos.csv',header = None,names = ["title", "description", "csv"],encoding = "ISO-8859-1"))
+        pd.read_csv('precalculated_videos.csv', header = 0, skipinitialspace = True, encoding = "ISO-8859-1"))
         uploaded_file = st.sidebar.file_uploader("Choose a video...", disabled=st.session_state.disabled)
 
         title = st.sidebar.text_input('Movie title', 'Type movie title here...')
