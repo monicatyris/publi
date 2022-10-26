@@ -14,9 +14,10 @@ def check_password():
     # return True
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == st.secrets["password"]:
+        if st.session_state["user_name"] == st.secrets["user_name"] and st.session_state["password"] == st.secrets["password"]:
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # don't store password
+            del st.session_state["user_name"]  # don't store user_name
         else:
             st.session_state["password_correct"] = False
 
@@ -31,7 +32,7 @@ def check_password():
         st.text_input(
             "Password", type="password", on_change=password_entered, key="password"
         )
-        st.error("😕 Password incorrect")
+        st.error("😕 Username or Password is incorrect")
         return False
     else:
         # Password correct.
