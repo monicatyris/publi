@@ -59,18 +59,19 @@ if __name__=='__main__':
         st.sidebar.image('demo_images/logo.png')
 
         uploaded_file = st.sidebar.file_uploader("Choose a video...")
+
+        title = st.sidebar.text_input('Movie title', 'Type movie title here...')
+        st.sidebar.write('The current movie title is: ', title)
+
+        description = st.sidebar.text_input('Movie description', 'Type movie description here...')
+        st.sidebar.write('The current movie description is: ', description)
+
         if uploaded_file is not None:
             vid = uploaded_file.name
             st.sidebar.success('Video uploaded!')
 
             print(vid)
-
-            title = st.sidebar.text_input('Movie title', 'Type movie title here...')
-            st.sidebar.write('The current movie title is: ', title)
-
-            description = st.sidebar.text_input('Movie description', 'Type movie description here...')
-            st.sidebar.write('The current movie description is: ', description)
-
+            
             if( os.path.splitext(vid)[0] == '6863'):
                 print('ok')         
                 
