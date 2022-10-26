@@ -11,7 +11,7 @@ import re
 
 def check_password():
     """Returns `True` if the user had the correct password."""
-    return True
+    # return True
     def password_entered():
         """Checks whether a password entered by the user is correct."""
         if st.session_state["password"] == st.secrets["password"]:
