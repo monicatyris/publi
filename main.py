@@ -42,9 +42,6 @@ if __name__=='__main__':
 
     if check_password():
 
-        # st.write("""
-        # # Demo Recommender System
-        # """)
         st.set_page_config(  # Alternate names: setup_page, page, layout
         layout="wide",  # Can be "centered" or "wide". In the future also "dashboard", etc.
         initial_sidebar_state="expanded",  # Can be "auto", "expanded", "collapsed"
@@ -58,7 +55,11 @@ if __name__=='__main__':
             
         st.sidebar.image('demo_images/logo.png')
 
-        uploaded_file = st.sidebar.file_uploader("Choose a video...")
+        st.checkbox("Using a pre-computed video", key="disabled")
+        with st.container(
+        "Choose a video... 👇",
+        disabled=st.session_state.disabled):
+            uploaded_file = st.sidebar.file_uploader("Choose a video...")
 
         title = st.sidebar.text_input('Movie title', 'Type movie title here...')
         st.sidebar.write('The current movie title is: ', title)
@@ -71,7 +72,7 @@ if __name__=='__main__':
             st.sidebar.success('Video uploaded!')
 
             print(vid)
-            
+
             if( os.path.splitext(vid)[0] == '6863'):
                 print('ok')         
                 
