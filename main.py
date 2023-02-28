@@ -6,31 +6,54 @@ import torch
 import time
 from os.path import isfile, join
 import pandas as pd
+import numpy as np
 from PIL import Image
 import publi_recommender
 import video_tags
 from os.path  import exists
 import os
 import re
+import time
 
 execution_path = os.getcwd()
+
+def get_time(start_time, end_time, container):
+    time_lapsed = end_time - start_time
+    mm, ss = time_lapsed // 60 % 60, time_lapsed % 60
+    hh = mm // 60
+    container.metric("Time for detection lapsed: ", f"{int(hh):02d}:{int(mm):02d}:{int(ss):02d}")
+
+def convert_time(time_lapsed):
+    mm, ss = time_lapsed // 60 % 60, time_lapsed % 60
+    hh = mm // 60
+    st.write(f"{int(hh):02d}:{int(mm):02d}:{int(ss):02d}")
 
 def detect(video_path):
 
     model_y = torch.hub.load('ultralytics/yolov5', 'yolov5l')  # or yolov5n - yolov5x6, custom
 
-    df_video = pd.DataFrame()
+    # df_video = pd.DataFrame()
+    np_video = []
     head, tail = os.path.split("videos/" + video_path)
     filename = os.path.splitext(tail)[0]
+    
+    scene_start_time = time.time()
     scene_list = video_tags.find_scenes("videos/" + video_path) #scene_list is now a list of FrameTimecode pairs representing the start/end of each scene
+    scene_end_time = time.time()
+    st.write("Extract scenes time: ")
+    convert_time(scene_end_time - scene_start_time)
+    
     video_tags.split_video_ffmpeg("videos/" + video_path, scene_list) #en mypath están ahora los vídeos de cada escena
 
     scenes = [f for f in listdir(execution_path) if f.startswith(filename)]
     progress = 1/len(scenes)
     my_bar = st.progress(0)
     numbers = st.empty()
+    
+    yolo_time, places_time = 0, 0
     for i, scene in enumerate(scenes):
-        df_scene=pd.DataFrame()
+        # df_scene=pd.DataFrame()
+        np_scene = []
         pathIn = join(execution_path, scene)
         pathOut = join(execution_path,"scenes\\")
         video_tags.video2frames(pathIn, pathOut)
@@ -38,21 +61,49 @@ def detect(video_path):
         frames = [f for f in listdir(pathOut) if isfile(join(pathOut, f))]
         for j, frame in enumerate(frames):            
             img = join(pathOut, frame)  # or file, Path, PIL, OpenCV, numpy, list
-            df_places = video_tags.places_prediction(img)
-            results = model_y(img)
-            df_frame = results.pandas().xyxy[0]  # or .show(), .save(), .crop(), .pandas(), etc.
-            df_frame = df_frame.append(df_places)
-            df_frame.insert(0, 'frame', j)
-            df_scene = df_scene.append(df_frame)
 
-        df_scene.insert(0, 'scene', i)
-        df_video = df_video.append(df_scene, ignore_index=True)
+            places_start_time = time.time()
+            # df_places = video_tags.places_prediction(img)
+            np_places = video_tags.places_prediction(img)
+            places_end_time = time.time()
+            places_time += (places_end_time - places_start_time)
+
+            yolo_start_time = time.time()
+            results = model_y(img)
+            yolo_end_time = time.time()
+            yolo_time += (yolo_end_time - yolo_start_time)
+            
+
+            df_frame = results.pandas().xyxy[0]  # or .show(), .save(), .crop(), .pandas(), etc.
+            np_frame = df_frame.to_numpy()
+
+            # df_frame = df_frame.append(df_places)
+            # df_frame.insert(0, 'frame', j)
+            # df_scene = df_scene.append(df_frame)
+            np_frame = np.concatenate(np_frame, np_places)
+            np_frame = np.concatenate(np_frame, [0, 'frame', j])
+            np_scene = np.concatenate(np_scene, np_frame)
+
+
+        
+        # df_scene.insert(0, 'scene', i)
+        # df_video = df_video.append(df_scene, ignore_index=True)
+        np_scene = np.concatenate(np_scene, [0, 'scene', i])
+        np_video = np.concatenate(np_video, np_scene)
         video_tags.delete_files_in(pathOut)
         my_bar.progress((i+1)*progress)
         with numbers.container():
             st.write(round((i+1)*progress*100,2), "%")
     
-    df_video.to_csv(filename + ".csv")
+    
+    st.write("Places time: ")
+    convert_time(places_time)
+
+    st.write("Yolo time: ")
+    convert_time(yolo_time)
+
+    # df_video.to_csv(filename + ".csv")
+    np.savetxt(filename + ".csv", np_video, delimiter=",", header="scene,frame,xmin,ymin,xmax,ymax,confidence,class,name")
     st.write("Finished!!! To continue click on Generate Ads")
     st.balloons()
     # return df_video
@@ -124,9 +175,16 @@ if __name__=='__main__':
                 st.video(bytes_data, format="video/mp4", start_time=0)
                 
                 if st.button('Calculate video tags'):
+                    detect_container = st.empty()
+                    detect_start_time = time.time()
                     with st.spinner('calculating video tags...'):
                         # video_tags.excect("videos/" + video_path)
                         detect(video_path)
+                    detect_end_time = time.time()
+                    st.write("Object detection time")
+                    get_time(detect_start_time, detect_end_time, detect_container)
+                    
+                    
                         
         else:
             video_path = precalculated_videos_df.loc[precalculated_videos_df['title'] == option, 'csv'].iloc[0]
@@ -143,8 +201,13 @@ if __name__=='__main__':
 
             video_tags = os.path.splitext(video_path)[0] + ".csv"
             if st.button('Generate Ads'):
+                similarity_container = st.empty()
+                similarity_start_time = time.time()
                 with st.spinner('calculating similar ads...'):
                     df_similarity, df_ads = publi_recommender.excect(video_tags, title, description)
+                similarity_end_time = time.time()
+                st.write("Loading the model for calculate similarity time")
+                get_time(similarity_start_time, similarity_end_time, similarity_container)
 
                 top = df_similarity["Sum"].nlargest(10).index.tolist()
                 for i in top:

@@ -150,7 +150,9 @@ def places_prediction(img):
     weight_softmax = params[-2].data.numpy()
     weight_softmax[weight_softmax<0] = 0
 
-    result = pd.DataFrame()
+    # result = pd.DataFrame()
+    #np
+    result = []
     input_img = V(tf(Image.open(img)).unsqueeze(0))
 
     # forward pass
@@ -163,8 +165,10 @@ def places_prediction(img):
     # output the IO prediction
     io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
     for i in range(0, 5):
-        new_row = {'confidence':probs[i], 'class':idx[i], 'name':classes[idx[i]]}
-        result = result.append(new_row, ignore_index=True)
+        # new_row = {'confidence':probs[i], 'class':idx[i], 'name':classes[idx[i]]}
+        # result = result.append(new_row, ignore_index=True)
+        new_row = [probs[i], idx[i], classes[idx[i]]]
+        result = np.concatenate((result, new_row), axis=0)
 
     # output the scene attributes
     responses_attribute = W_attribute.dot(features_blobs[1])
@@ -172,8 +176,11 @@ def places_prediction(img):
 
     for i in range(-1,-10,-1):
         if(responses_attribute[idx_a[i]] > 0.5):
-            new_row = {'name':labels_attribute[idx_a[i]], 'confidence':responses_attribute[idx_a[i]], 'class':idx_a[i]}
-            result = result.append(new_row, ignore_index=True)
+            # new_row = {'name':labels_attribute[idx_a[i]], 'confidence':responses_attribute[idx_a[i]], 'class':idx_a[i]}
+            # result = result.append(new_row, ignore_index=True)
+            new_row = [labels_attribute[idx_a[i]], responses_attribute[idx_a[i]], idx_a[i]]
+            result = np.concatenate((result, new_row), axis=0)
+
 
     return result
 
@@ -194,7 +201,14 @@ def video2frames(pathIn, pathOut):
     success,image = vidcap.read()
     success = True
     while success:
-        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*1000)) 
+
+        vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*5000)) 
+        # Resize the image frames
+        try:
+            image = cv2.resize(image, (150, 130))
+        except Exception as e:
+            print(str(e))
+
         cv2.imwrite(join(pathOut, "frame%d.jpg" % count), image)     # save frame as JPEG file      
         success,image = vidcap.read()
         print('Read a new frame: ', success)
@@ -231,7 +245,9 @@ def object_detect_by_scence(video_path, model_y):
             img = join(pathOut, frame)  # or file, Path, PIL, OpenCV, numpy, list
             df_places = places_prediction(img) # using Places365
             results = model_y(img) # using yolo model
-            df_frame = results.pandas().xyxy[0]  # or .show(), .save(), .crop(), .pandas(), etc.
+            # df_frame = results.pandas().xyxy[0]  # or .show(), .save(), .crop(), .pandas(), etc.
+            df_frame = results.tolist()
+            print("#### SHAPE ####", np.shape(df_frame))
             df_frame = df_frame.append(df_places)
             df_frame.insert(0, 'frame', j)
             df_scene = df_scene.append(df_frame)
