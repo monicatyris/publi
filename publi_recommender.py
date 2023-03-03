@@ -118,26 +118,22 @@ def get_similarity_matrix(df_video, ads_tags, model, top_n=10):
 
 
 
-def excect(video, title, description):
-    glove_vectors = gensim.downloader.load('fasttext-wiki-news-subwords-300')
+def excect(video, title, description, precalculated = True):
     df_ads = get_ads()
-    # 'C:/Users/Monica/Documents/Tyris/Publi/Notebooks/yolo-object-detection/1580.csv'
-    df_video = get_video_info(video, title, description)
+    
+    if(precalculated):
+        pass
+        precalculated_videos_df = pd.read_csv('precalculated_videos.csv', header = 0, skipinitialspace = True, encoding = "ISO-8859-1")
+        sm_path = precalculated_videos_df.loc[precalculated_videos_df['title'] == title, "similarity_matrix"].iloc[0]
+        df_similarity = pd.read_csv(sm_path, header = 0, skipinitialspace = True, encoding = "ISO-8859-1")
 
-    df_similarity = get_similarity_matrix(df_video, df_ads["Tags"], glove_vectors, top_n=5)
-    df_similarity = pd.DataFrame(df_similarity.values, columns = list(df_video['name'].head(5)))
-    df_similarity["Sum"] = df_similarity.sum(axis=1)
-    df_similarity.to_csv("similarity_matrix.csv",index=False)
+    else:
+        glove_vectors = gensim.downloader.load('fasttext-wiki-news-subwords-300')
+        df_video = get_video_info(video, title, description)
+
+        df_similarity = get_similarity_matrix(df_video, df_ads["Tags"], glove_vectors, top_n=5)
+        df_similarity = pd.DataFrame(df_similarity.values, columns = list(df_video['name'].head(5)))
+        df_similarity["Sum"] = df_similarity.sum(axis=1)
+        df_similarity.to_csv("similarity_matrix.csv",index=False)
 
     return df_similarity, df_ads
-
-    ##Best match
-    top = df_similarity["Sum"].nlargest(10).index.tolist()
-    print(top)
-    print(df_similarity["Sum"].nlargest(10))
-    print(df_similarity["Sum"].iloc[345])
-
-    for i in top:
-        print("Ad recommender with similarity: ", df_similarity.iloc[i])
-        print("Word best similarity is: ", df_similarity.iloc[i, 0:len(df_similarity.columns) - 1].idxmax(), df_similarity.iloc[i, 0:len(df_similarity.columns) - 1].max())
-        print(df_ads.iloc[i])

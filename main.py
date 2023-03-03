@@ -105,6 +105,7 @@ if __name__=='__main__':
 
         st.sidebar.checkbox("Using a pre-computed video", key="disabled")
         precalculated_videos_df = pd.read_csv('precalculated_videos.csv', header = 0, skipinitialspace = True, encoding = "ISO-8859-1")
+        
         option = st.sidebar.selectbox(
         'Please select one of the pre-calculated .CSV',
         precalculated_videos_df,
@@ -144,7 +145,7 @@ if __name__=='__main__':
             video_tags = os.path.splitext(video_path)[0] + ".csv"
             if st.button('Generate Ads'):
                 with st.spinner('calculating similar ads...'):
-                    df_similarity, df_ads = publi_recommender.excect(video_tags, title, description)
+                    df_similarity, df_ads = publi_recommender.excect(video_tags, title, description, precalculated=st.session_state.disabled)
 
                 top = df_similarity["Sum"].nlargest(10).index.tolist()
                 for i in top:
